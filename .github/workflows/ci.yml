@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  api:
     runs-on: ubuntu-latest
 
     services:
@@ -19,19 +19,55 @@ jobs:
           --health-cmd pg_isready
           --health-interval 10s
 
+    defaults:
+      run:
+        working-directory: ./api
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format -- --check
-      - run: npm test
+      - name: Install api dependencies
+        run: npm ci
+
+      - name: Lint api
+        run: npm run lint
+
+      - name: Check formatting (api)
+        run: npm run format -- --check
+
+      - name: Run api tests
+        run: npm test
         env:
           DB_HOST: localhost
           DB_USER: postgres
           DB_PASSWORD: postgres
           DB_NAME: loja_db_test
           NODE_ENV: test
+
+  web:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Lint web
+        run: npm run lint # se existir
+
+      - name: Check formatting (web)
+        run: npm run format -- --check # se existir
+
+      - name: Run web tests
+        run: npm test
