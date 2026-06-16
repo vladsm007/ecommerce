@@ -1,22 +1,26 @@
 import { useEffect, useState } from "react";
-import { getProduct, deleteProduct, getProducts } from "../service/api";
+import { deleteProduct, getProducts } from "../service/api";
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  // O fetch acontece dentro de .then()/.catch() — chamadas assíncronas,
+  // não violam a regra react-hooks/set-state-in-effect
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    const { data } = await getProducts();
-    setProducts(data);
-  };
+    getProducts()
+      .then(({ data }) => setProducts(data))
+      .catch((error) => {
+        console.error("Erro ao carregar produtos", error);
+        setProducts([]);
+      });
+  }, [refreshKey]);
 
   const handleDelete = async (id) => {
     if (confirm("Remover produto?")) {
       await deleteProduct(id);
-      loadProducts();
+      // Incrementar refreshKey dispara o useEffect sem chamar setState dentro dele
+      setRefreshKey((k) => k + 1);
     }
   };
 
@@ -27,8 +31,8 @@ export default function ProductList() {
         {products.map((p) => (
           <li key={p.id}>
             {p.name} - R$ {p.price} (estoque: {p.stock})
-            <button oneClick={() => (window.location.href = `/editar/${p.id}`)}>
-              Edtiar
+            <button onClick={() => (window.location.href = `/editar/${p.id}`)}>
+              Editar
             </button>
             <button onClick={() => handleDelete(p.id)}>Excluir</button>
           </li>

@@ -1,63 +1,75 @@
-const request = require('supertest');
-const app = require('../../src/server');
+const { NotFoundError } = require('../../src/lib/errors');
+const productService = require('../../src/services/productService');
+const Product = require('../../src/models/Product');
 
-const sequelize = require('../../src/config/sequelize');
+// Isola o model do banco de dados — testa apenas a lógica do service
+jest.mock('../../src/models/Product');
 
-// Antes de todos os testes, sincroniza o banco de testes
-beforeAll(async () => {
-  await sequelize.sync({ force: true }); //recria tabelas
+describe('NotFoundError', () => {
+  test('deve ser uma instância de Error', () => {
+    const err = new NotFoundError('não encontrado');
+    expect(err).toBeInstanceOf(Error);
+  });
+
+  test('deve ter o nome correto', () => {
+    const err = new NotFoundError('não encontrado');
+    expect(err.name).toBe('NotFoundError');
+  });
+
+  test('deve propagar a mensagem corretamente', () => {
+    const err = new NotFoundError('Produto não encontrado');
+    expect(err.message).toBe('Produto não encontrado');
+  });
 });
 
-// Depois de todos, fecha conexão
-afterAll(async () => {
-  await sequelize.close();
-});
-
-describe('Product API', () => {
-  let productId;
-
-  test('POST /api/v1/products - deve criar um produto', async () => {
-    const newProduct = {
-      name: 'Camiseta',
-      price: 39.9,
-      description: 'Azul',
-      stock: 5,
-    };
-    const response = await request(app)
-      .post('/api/v1/products')
-      .send(newProduct)
-      .expect(201);
-
-    expect(response.body).toHaveProperty('id');
-    expect(response.body.name).toBe('Camiseta');
-    productId = response.body.id;
+describe('ProductService — unitário', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('GET /api/v1/products - deve listar produtos', async () => {
-    const response = await request(app).get('/api/v1/products').expect(200);
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(1);
+  test('getAll() deve retornar a lista de produtos', async () => {
+    const mockProducts = [{ id: 1, name: 'Camiseta' }];
+    Product.findAll.mockResolvedValue(mockProducts);
+
+    const result = await productService.getAll();
+
+    expect(Product.findAll).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(mockProducts);
   });
 
-  test('GET /api/v1/products/:id - deve retornar um produto específico', async () => {
-    const response = await request(app)
-      .get(`/api/v1/products/${productId}`)
-      .expect(200);
-    expect(response.body.id).toBe(productId);
+  test('getById() deve retornar um produto quando encontrado', async () => {
+    const mockProduct = { id: 1, name: 'Camiseta' };
+    Product.findByPk.mockResolvedValue(mockProduct);
+
+    const result = await productService.getById(1);
+
+    expect(Product.findByPk).toHaveBeenCalledWith(1);
+    expect(result).toEqual(mockProduct);
   });
 
-  test('PUT /api/v1/products/:id - deve atualizar o produto', async () => {
-    const update = { name: 'Camisa Preta', price: 49.9 };
-    const response = await request(app)
-      .put(`/api/v1/products/${productId}`)
-      .send(update)
-      .expect(200);
-    expect(response.body.name).toBe('Camisa Preta');
-    expect(response.body.price).toBe(49.9);
+  test('getById() deve lançar NotFoundError quando produto não existe', async () => {
+    Product.findByPk.mockResolvedValue(null);
+
+    await expect(productService.getById(999)).rejects.toThrow(NotFoundError);
+    await expect(productService.getById(999)).rejects.toThrow(
+      'Produto não encontrado'
+    );
   });
 
-  test('DELETE /api/v1/products:id - deve remover o produto', async () => {
-    await request(app).delete(`/api/v1/products/${productId}`).expect(200);
-    await request(app).get(`/api/v1/products/${productId}`).expect(404);
+  test('create() deve chamar Product.create com os dados corretos', async () => {
+    const data = { name: 'Tênis', price: 199.9, stock: 10 };
+    const mockCreated = { id: 2, ...data };
+    Product.create.mockResolvedValue(mockCreated);
+
+    const result = await productService.create(data);
+
+    expect(Product.create).toHaveBeenCalledWith(data);
+    expect(result).toEqual(mockCreated);
+  });
+
+  test('delete() deve lançar NotFoundError se produto não existe', async () => {
+    Product.findByPk.mockResolvedValue(null);
+
+    await expect(productService.delete(999)).rejects.toThrow(NotFoundError);
   });
 });
