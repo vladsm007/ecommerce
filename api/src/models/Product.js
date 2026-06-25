@@ -1,6 +1,5 @@
-// Define a estrutura da tabela 'products' usando Sequelize
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/sequelize'); // veremos abaixo
+const sequelize = require('../config/sequelize');
 
 const Product = sequelize.define('Product', {
   name: {

@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getProduct, createProduct, updateProduct } from "../service/api";
 
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -14,7 +17,11 @@ export default function ProductForm() {
 
   useEffect(() => {
     if (id) {
-      getProduct(id).then(({ data }) => setForm(data));
+      //setLoading(true);
+      getProduct(id)
+        .then(({ data }) => setForm(data))
+        .catch(() => setError("Erro ao carregar produto."))
+        .finally(() => setLoading(false));
     }
   }, [id]);
 
@@ -24,47 +31,111 @@ export default function ProductForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (id) {
-      await updateProduct(id, form);
-    } else {
-      await createProduct(form);
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (id) {
+        await updateProduct(id, form);
+        navigate("/", {
+          state: { message: "Produto atualizado com sucesso!" },
+        });
+      } else {
+        await createProduct(form);
+        navigate("/", {
+          state: { message: "Produto cadastrado com sucesso!" },
+        });
+      }
+    } catch (err) {
+      setError("Error ao salvar produto. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
-    navigate("/");
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        name="name"
-        placeholder="Nome"
-        value={form.name}
-        onChange={handleChange}
-        required
-      />
-      <input
-        name="price"
-        placeholder="Preço"
-        type="number"
-        step="0.01"
-        value={form.price}
-        onChange={handleChange}
-        required
-      />
-      <input
-        name="description"
-        placeholder="Descrição"
-        value={form.description}
-        onChange={handleChange}
-      />
-      <input
-        name="stock"
-        placeholder="Estoque"
-        type="number"
-        value={form.stock}
-        onChange={handleChange}
-        required
-      />
-      <button type="submit">Salvar</button>
-    </form>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-4"
+      >
+        <h2 className="text-2xl font-bold text-grey-800 text-center">
+          {id ? "Editar Produto" : "Novo Produto"}
+        </h2>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nome
+          </label>
+          <input
+            name="name"
+            placeholder="Digite o nome do produto"
+            value={form.name}
+            onChange={handleChange}
+            required
+            disabled={loading}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm fornt-medium text-gray-700 mb-1">
+            Preço
+          </label>
+          <input
+            name="price"
+            placeholder="0.00"
+            type="number"
+            step="0.01"
+            value={form.price}
+            onChange={handleChange}
+            required
+            disabled={loading}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Descrição
+          </label>
+          <input
+            name="description"
+            placeholder="Descrição do produto"
+            value={form.description}
+            onChange={handleChange}
+            disabled={loading}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Estoque
+          </label>
+          <input
+            name="stock"
+            placeholder="Quantidade em estoque"
+            type="number"
+            value={form.stock}
+            onChange={handleChange}
+            required
+            disabled={loading}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? "Salvando..." : "Salvar"}
+          Salvar
+        </button>
+      </form>
+    </div>
   );
 }

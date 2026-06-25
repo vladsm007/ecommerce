@@ -13,7 +13,6 @@ class ProductService {
   }
 
   async create(data) {
-    // Melhorar a validação do produto.
     return await Product.create(data);
   }
 

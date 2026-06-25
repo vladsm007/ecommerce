@@ -1,28 +1,36 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { deleteProduct, getProducts } from "../service/api";
 
 export default function ProductList() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // O fetch acontece dentro de .then()/.catch() — chamadas assíncronas,
   // não violam a regra react-hooks/set-state-in-effect
   useEffect(() => {
+    //setLoading(true);
     getProducts()
       .then(({ data }) => setProducts(data))
-      .catch((error) => {
-        console.error("Erro ao carregar produtos", error);
-        setProducts([]);
-      });
-  }, [refreshKey]);
+      .catch(() => setError("Erro ao carregar produtos."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleDelete = async (id) => {
     if (confirm("Remover produto?")) {
-      await deleteProduct(id);
-      // Incrementar refreshKey dispara o useEffect sem chamar setState dentro dele
-      setRefreshKey((k) => k + 1);
+      try {
+        await deleteProduct(id);
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+      } catch {
+        alert("Erro ao excluir produto.");
+      }
     }
   };
+
+  if (loading) return <p>Carregando...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
     <div>
@@ -31,9 +39,7 @@ export default function ProductList() {
         {products.map((p) => (
           <li key={p.id}>
             {p.name} - R$ {p.price} (estoque: {p.stock})
-            <button onClick={() => (window.location.href = `/editar/${p.id}`)}>
-              Editar
-            </button>
+            <button onClick={() => navigate(`/editar/${p.id}`)}>Editar</button>
             <button onClick={() => handleDelete(p.id)}>Excluir</button>
           </li>
         ))}
