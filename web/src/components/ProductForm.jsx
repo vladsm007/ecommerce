@@ -55,7 +55,7 @@ export default function ProductForm() {
           state: { message: "Produto cadastrado com sucesso!" },
         });
       }
-    } catch (err) {
+    } catch {
       setError("Erro ao salvar produto. Tente novamente.");
     } finally {
       setLoading(false);
