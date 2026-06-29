@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getProduct, createProduct, updateProduct } from "../service/api";
 
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
@@ -17,7 +16,7 @@ export default function ProductForm() {
 
   useEffect(() => {
     if (id) {
-      //setLoading(true);
+      setLoading(true); // ← descomentado
       getProduct(id)
         .then(({ data }) => setForm(data))
         .catch(() => setError("Erro ao carregar produto."))
@@ -26,7 +25,11 @@ export default function ProductForm() {
   }, [id]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target;
+    setForm({
+      ...form,
+      [name]: type === "number" ? (value === "" ? "" : Number(value)) : value,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -35,19 +38,25 @@ export default function ProductForm() {
     setError(null);
 
     try {
+      const payload = {
+        ...form,
+        price: parseFloat(form.price) || 0,
+        stock: parseInt(form.stock) || 0,
+      };
+
       if (id) {
-        await updateProduct(id, form);
+        await updateProduct(id, payload);
         navigate("/", {
           state: { message: "Produto atualizado com sucesso!" },
         });
       } else {
-        await createProduct(form);
+        await createProduct(payload);
         navigate("/", {
           state: { message: "Produto cadastrado com sucesso!" },
         });
       }
     } catch (err) {
-      setError("Error ao salvar produto. Tente novamente.");
+      setError("Erro ao salvar produto. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +68,7 @@ export default function ProductForm() {
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-4"
       >
-        <h2 className="text-2xl font-bold text-grey-800 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 text-center">
           {id ? "Editar Produto" : "Novo Produto"}
         </h2>
 
@@ -68,6 +77,7 @@ export default function ProductForm() {
             {error}
           </div>
         )}
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Nome
@@ -82,8 +92,9 @@ export default function ProductForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
           />
         </div>
+
         <div>
-          <label className="block text-sm fornt-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Preço
           </label>
           <input
@@ -112,6 +123,7 @@ export default function ProductForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Estoque
@@ -127,13 +139,13 @@ export default function ProductForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
           />
         </div>
+
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Salvando..." : "Salvar"}
-          Salvar
         </button>
       </form>
     </div>

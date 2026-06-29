@@ -12,7 +12,7 @@ const productSchema = Joi.object({
     'number.base': 'Preço deve ser um número',
     'number.positive': 'Preço deve ser maior que 0',
   }),
-  descripyion: Joi.string().max(5000).optional().allow(''),
+  description: Joi.string().max(5000).optional().allow(''),
   stock: Joi.number().integer().min(0).required().messages({
     'number.base': 'Estoque deve ser um número inteiro.',
     'number.min': 'Estoque não pode ser negativo',
