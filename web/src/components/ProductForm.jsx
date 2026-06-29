@@ -5,7 +5,7 @@ import { getProduct, createProduct, updateProduct } from "../service/api";
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: "",
@@ -16,7 +16,6 @@ export default function ProductForm() {
 
   useEffect(() => {
     if (id) {
-      setLoading(true); // ← descomentado
       getProduct(id)
         .then(({ data }) => setForm(data))
         .catch(() => setError("Erro ao carregar produto."))
