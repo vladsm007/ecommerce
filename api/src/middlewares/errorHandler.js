@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
   console.error({
     timestamp: new Date().toISOString(),
