@@ -23,4 +23,7 @@ const Product = sequelize.define('Product', {
   },
 });
 
+const User = require('./User');
+Product.belongsTo(User, { as: 'creator', foreignKey: 'created_by' });
+
 module.exports = Product;
